@@ -2,10 +2,13 @@ import os
 
 from psycopg2 import connect, OperationalError
 from psycopg2.errors import DuplicateDatabase, DuplicateTable
-from dotenv import load_dotenv
 
-load_dotenv()
-url = os.getenv("DATABASE_URL")
+
+username = "postgres"
+passwd = "coderslab"
+server = "localhost"
+
+
 
 CREATE_DATABASE = "CREATE DATABASE messanger_db"
 
@@ -29,8 +32,17 @@ CREATE_TABLE_MESSAGES = """CREATE TABLE messages
                         FOREIGN KEY (to_id) REFERENCES users(user_id) ON DELETE CASCADE 
                     );"""
 
-try:
-    connection = connect(url)
 
-except OperationalError:
-    print("ERROR!")
+try:
+    connection = connect(user=username, password=passwd, host=server)
+    connection.autocommit = True
+    cursor = connection.cursor()
+    try:
+        cursor.execute(CREATE_DATABASE)
+        print("DATABASE CREATED")
+    except DuplicateDatabase as dd:
+        print("WARNING: DATABASE EXISTS", dd)
+    connection.close()
+
+except OperationalError as oe:
+    print("WARNING: ERROR!", oe)
