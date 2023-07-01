@@ -127,15 +127,42 @@ class User:
         else:
             print("There is no user with this id number ")
 
+    @staticmethod
+    def load_all_users(cursor):
+        """Fetch all users from the database.
 
-    def load_all_users(self, cursor):
+            Args:
+                cursor: The cursor object used to execute the SQL query.
+
+            Returns:
+                list: A list of User objects representing all the users in the database.
+
+            Raises:
+                psycopg2.Error: If there is an error executing the SQL query.
+            """
+
+        sql = """SELECT * FROM users"""
+        users = []
+        cursor.execute(sql)
+
+        for user_data in cursor.fetchall():
+            id_, username, hashed_password = user_data
+            loaded_user = User(username)
+            loaded_user._id = id_
+            loaded_user.username = username
+            loaded_user._hashed_password = hashed_password
+            users.append(loaded_user)
+        return users
+
+    @staticmethod
+    def delete_user(cursor):
         pass
 
 
-
 adam = User("Adam", "admin1")
+wera = User("Wera", "admin2")
 connection = connect(user="postgres", password="coderslab", host="localhost", database='messanger_db')
 connection.autocommit = True
 cursor = connection.cursor()
-print(adam.load_user_by_id(cursor, 1))
+print(adam.load_all_users(cursor))
 
