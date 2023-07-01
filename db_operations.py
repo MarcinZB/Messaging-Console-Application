@@ -1,5 +1,7 @@
 import crypto
 from psycopg2 import connect
+import psycopg2.errors
+
 
 
 class User:
@@ -154,15 +156,28 @@ class User:
             users.append(loaded_user)
         return users
 
-    @staticmethod
-    def delete_user(cursor):
-        pass
+    def delete_user(self, cursor, id):
+        """Delete the user from the database.
+
+           Args:
+               cursor: The cursor object used to execute the SQL query.
+
+           Returns:
+               bool: True if the deletion is successful, False otherwise.
+
+           Raises:
+               psycopg2.Error: If there is an error executing the SQL query.
+           """
+        sql = """DELETE FROM users WHERE user_id=%s;"""
+
+        try:
+            cursor.execute(sql, (id,))
+            self._id = -1
+            return True
+        except psycopg2.Error as e:
+            print("Error deleting user:", e)
+            return False
 
 
-adam = User("Adam", "admin1")
-wera = User("Wera", "admin2")
-connection = connect(user="postgres", password="coderslab", host="localhost", database='messanger_db')
-connection.autocommit = True
-cursor = connection.cursor()
-print(adam.load_all_users(cursor))
+
 
