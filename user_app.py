@@ -44,6 +44,7 @@ def create_user(cursor, username, password):
 
 
 def edit_password(cursor, username, password, new_pass):
+
     """Edit the password for a user with the given username.
 
         Args:
@@ -86,8 +87,68 @@ def edit_password(cursor, username, password, new_pass):
         print("User does not exist !")
 
 
+def delete_user(cursor, username, password):
+
+    """Delete the user account with the given username.
+
+        Args:
+            cursor: The database cursor object.
+            username (str): The username of the user.
+            password (str): The password of the user.
+
+        Returns:
+            None
+
+        Raises:
+            None
+
+        Prints a success message if the user account is deleted successfully. If the provided
+        password is incorrect, it prints an error message. If the user does not exist, it
+        prints an error message.
+
+        """
+
+    user = db_operations.User.load_user_by_username(cursor, username)
+    try:
+        user_hashed = user.hashed_password
+        user_id = user.id
+    except AttributeError as ae:
+        error = ae
+
+    if user:
+        if check_password(password, user_hashed):
+            user.delete_user(cursor, user_id)
+            print("Your account has been deleted ! ")
+        else:
+            print('Incorrect password !')
+
+
+def show_users(cursor):
+
+    """Display a list of all users.
+
+        Args:
+            cursor: The database cursor object.
+
+        Returns:
+            None
+
+        Raises:
+            None
+
+        Prints a numbered list of all users, including their ID and username.
+
+        """
+    users = db_operations.User.load_all_users(cursor)
+    counter = 1
+    for i in users:
+        print(f"{counter}. ID:{i.id}, USERNAME:{i.username}")
+        counter += 1
+
 
 connection = connect(user='postgres', password='coderslab', host='localhost', database='messanger_db')
 connection.autocommit = True
 cursor = connection.cursor()
+
+show_users(cursor)
 
