@@ -5,7 +5,7 @@ import psycopg2.errors
 
 
 class User:
-    def __init__(self, username, password="", salt=""):
+    def __init__(self, username, password="", salt=None):
         """Initialize a User object.
 
             Args:
@@ -37,7 +37,7 @@ class User:
     def hashed_password(self):
         return self._hashed_password
 
-    def new_password(self, password, salt=""):
+    def new_password(self, password, salt=None):
         """Generate a new hashed password for the user.
 
             Args:
@@ -72,8 +72,8 @@ class User:
             self._id = cursor.fetchone()[0]
             return True
         else:
-            sql = """UPDATE user SET username = %s, hashed_password=%s
-                     WHERE id = %s"""
+            sql = """UPDATE users SET username = %s, hashed_password=%s
+                     WHERE user_id = %s"""
             values = (self.username, self.hashed_password, self.id)
             cursor.execute(sql, values)
             return True
@@ -106,7 +106,7 @@ class User:
             loaded_user._hashed_password = hashed_password
             return loaded_user
         else:
-            print("There is no user with this username")
+            print("There is no user with this username !")
             return data
 
     @staticmethod
@@ -177,6 +177,93 @@ class User:
         except psycopg2.Error as e:
             print("Error deleting user:", e)
             return False
+
+
+class Message:
+
+    def __init__(self, from_id, to_id, text):
+        self._id = -1
+        self.from_id = from_id
+        self.to_id = to_id
+        self.text = text
+        self._creation_date = None
+
+    @property
+    def id(self):
+        """Get the ID of the user.
+
+            Returns:
+            int: The ID of the user.
+        """
+        return self._id
+
+    def save_to_db(self, cursor):
+        """Save the message object to the database.
+
+            Args:
+                cursor: The cursor object used to execute the SQL statements.
+
+            Returns:
+                bool: True if the operation is successful, False otherwise.
+
+            Raises:
+                psycopg2.Error: If there is an error executing the SQL statements.
+            """
+        if self._id == -1:
+            sql = """INSERT INTO messages(from_id, to_id, text)
+                     VALUES (%s,%s,%s) 
+                     RETURNING message_id, creation_date;"""
+
+            values = (self.from_id, self.to_id, self.text)
+            cursor.execute(sql, values)
+            self._id, self._creation_date = cursor.fetchone()
+            return True
+        else:
+            sql = """UPDATE messages
+                     SET to_id=%s, from_id=%s, text=%s WHERE id=%s"""
+            values = (self.from_id, self.to_id, self.text, self.id)
+            cursor.execute(sql, values)
+            return True
+
+    @staticmethod
+    def load_all_messages(cursor, user_id=None):
+        """Load all messages from the database.
+
+           Args:
+               cursor: The cursor object used to execute the SQL query.
+               user_id (int, optional): The ID of the user to filter messages by recipient. Defaults to None.
+
+           Returns:
+               list: A list of Message objects representing all the messages in the database.
+
+           Raises:
+               psycopg2.Error: If there is an error executing the SQL query.
+           """
+        if user_id:
+            sql = "SELECT message_id, from_id, to_id, text, creation_date FROM messages WHERE to_id=%s"
+            cursor.execute(sql, (user_id,))
+        else:
+            sql = "SELECT message_id, from_id, to_id, text, creation_date FROM messages"
+            cursor.execute(sql)
+
+        messages = []
+
+        for message in cursor.fetchall():
+            id_, from_id, to_id, text, creation_date = message
+            loaded_message = Message(from_id, to_id, text)
+            loaded_message._id = id_
+            loaded_message._creation_date = creation_date
+            messages.append(loaded_message)
+        return messages
+
+
+"""user = User("Weronika", 'Admin1')
+connection = connect(user='postgres', password='coderslab', host='localhost', database='messanger_db')
+connection.autocommit = True
+cursor = connection.cursor()"""
+
+
+
 
 
 

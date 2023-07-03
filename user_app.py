@@ -8,7 +8,9 @@ parser = argparse.ArgumentParser()
 parser.add_argument('-u', '--username', help="username")
 parser.add_argument('-p', '--password', help="user password")
 parser.add_argument('-n', '--new_pass', help='new password')
-parser.add_argument('-e', '--edit', help='edit user')
+parser.add_argument('-e', '--edit', help='edit user', action="store_true")
+parser.add_argument('-s', '--show', help='show all users', action="store_true")
+parser.add_argument('-d', '--delete', help='delete account', action="store_true")
 
 args = parser.parse_args()
 
@@ -142,13 +144,27 @@ def show_users(cursor):
     users = db_operations.User.load_all_users(cursor)
     counter = 1
     for i in users:
-        print(f"{counter}. ID:{i.id}, USERNAME:{i.username}")
+        print(f"{counter}. ID: {i.id}, USERNAME: {i.username}")
         counter += 1
 
 
-connection = connect(user='postgres', password='coderslab', host='localhost', database='messanger_db')
-connection.autocommit = True
-cursor = connection.cursor()
+if __name__ == '__main__':
+    try:
+        connection = connect(user='postgres', password='coderslab', host='localhost', database='messanger_db')
+        connection.autocommit = True
+        cursor = connection.cursor()
 
-show_users(cursor)
+        if args.username and args.password and args.edit and args.new_pass:
+            edit_password(cursor, args.username, args.password, args.new_pass)
+        elif args.username and args.password and args.delete:
+            delete_user(cursor, args.username, args.password)
+        elif args.username and args.password:
+            create_user(cursor, args.username, args.password)
+        elif args.show:
+            show_users(cursor)
+        else:
+            parser.print_help()
+        connection.close()
+    except OperationalError as opt_err:
+        print("Connection Error: ", opt_err)
 
